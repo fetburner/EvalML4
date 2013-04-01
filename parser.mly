@@ -27,7 +27,6 @@ open Exp
 %token WITH
 %token BAR
 
-/* 優先順位と連結性をここに書く */
 %nonassoc IN
 %nonassoc LET
 %nonassoc THEN
@@ -38,7 +37,6 @@ open Exp
 %left AST
 %left prec_app
 
-/* 開始記号の定義 */
 %type <Exp.t> toplevel
 %start toplevel
 

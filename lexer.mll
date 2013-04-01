@@ -2,7 +2,6 @@
 open Parser
 }
 
-(*正規表現の略記*)
 let space = [' ' '\t' '\n' '\r']
 let digit = ['0'-'9']
 let lower = ['a'-'z']
