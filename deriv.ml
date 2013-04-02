@@ -169,7 +169,7 @@ let rec eval_and_deriv env = function
           (EIfT ({ env = env; exp = Exp.If (e1, e2, e3); value = v}, d1, d2), v)
       | Value.Bool (false) ->
           let (d3, v) = eval_and_deriv env e3 in
-          (EIfT ({ env = env; exp = Exp.If (e1, e2, e3); value = v}, d1, d3), v)
+          (EIfF ({ env = env; exp = Exp.If (e1, e2, e3); value = v}, d1, d3), v)
       end
   | Exp.Let (x, e1, e2) ->
       let (d1, v1) = eval_and_deriv env e1 in
