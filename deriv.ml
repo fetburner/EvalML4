@@ -115,7 +115,7 @@ let rec to_string_aux indent depth = function
   | BTimes (desc) ->
       String.make depth ' ' ^ Value.to_string desc.lsrc ^ " times " ^ Value.to_string desc.rsrc ^ " is " ^ Value.to_string desc.dst ^ " by B-Times {}"
   | BLt (desc) ->
-      String.make depth ' ' ^ Value.to_string desc.lsrc ^ " less than" ^ Value.to_string desc.rsrc ^ " is " ^ Value.to_string desc.dst ^ " by B-Lt {}"
+      String.make depth ' ' ^ Value.to_string desc.lsrc ^ " less than " ^ Value.to_string desc.rsrc ^ " is " ^ Value.to_string desc.dst ^ " by B-Lt {}"
 
 let to_string = to_string_aux 2 0
 
