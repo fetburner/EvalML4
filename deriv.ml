@@ -187,7 +187,7 @@ let rec eval_and_deriv env = function
           (EApp ({ env = env; exp = Exp.App (e1, e2); value = v }, d1, d2, d3), v)
       | Value.Rec (env2, x, y, e0) as v1 ->
           let (d3, v) = eval_and_deriv ((y, v2) :: (x, v1) :: env2) e0 in
-          (EApp ({ env = env; exp = Exp.App (e1, e2); value = v }, d1, d2, d3), v)
+          (EAppRec ({ env = env; exp = Exp.App (e1, e2); value = v }, d1, d2, d3), v)
       end
   | Exp.LetRec (x, y, e1, e2) ->
       let (d1, v) = eval_and_deriv ((x, Value.Rec (env, x, y, e1)) :: env) e2 in
@@ -206,7 +206,6 @@ let rec eval_and_deriv env = function
           let (d2, v) = eval_and_deriv env e2 in
           (EMatchNil ({ env = env; exp = Exp.Match (e1, e2, x, y, e3); value = v}, d1, d2), v)
       | Value.Cons (v1, v2) ->
-          (* E-MatchCons *)
           let (d3, v) = eval_and_deriv ((y, v2) :: (x, v1) :: env) e3 in
           (EMatchCons ({ env = env; exp = Exp.Match (e1, e2, x, y, e3); value = v}, d1, d3), v)
       end
