@@ -5,7 +5,8 @@ type t =
   | Rec of env * string * string * Exp.t
   | Nil
   | Cons of t * t
-and env = (string * t) list
+and bind = string * t
+and env = bind list
 
 let rec to_string = function
   | Int (i) ->
@@ -20,7 +21,12 @@ let rec to_string = function
       "[]"
   | Cons (e1, e2) ->
       "(" ^ to_string e1 ^ ") :: (" ^ to_string e2 ^ ")"
+(*
+ * val bind_to_string : bind -> string
+ * 束縛を文字列で表現する
+ *)
+and bind_to_string (x, v) = x ^ " = " ^ to_string v
 and env_to_string = function
   | [] -> ""
-  | (x0, v0) :: env ->
-      List.fold_left (fun acc (x, v) -> x ^ " = " ^ to_string v ^ ", " ^ acc) "" env ^ x0 ^ " = " ^ to_string v0
+  | b0 :: env ->
+      List.fold_left (fun acc b -> bind_to_string b ^ ", " ^ acc) (bind_to_string b0) env

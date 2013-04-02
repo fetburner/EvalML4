@@ -21,12 +21,19 @@ type t =
   | BMinus of binop_desc
   | BTimes of binop_desc
   | BLt of binop_desc
+(* 判断のうちenv |- exp evalto valueまでの記述を表す *)
 and eval_desc = { env : Value.env; exp : Exp.t; value : Value.t }
+(* 整数演算に関する判断のうち頻出する記述を表す *)
 and binop_desc = { lsrc : Value.t; rsrc : Value.t; dst : Value.t }
 
+(* val string_of_eval_desc : eval_desc -> string *)
 let string_of_eval_desc { env = env; exp = e; value = v} =
   Value.env_to_string env ^ " |- " ^ Exp.to_string e ^ " evalto " ^ Value.to_string v ^ " by "
 
+(*
+ * val to_string_aux : int -> int -> t -> string
+ * 指定された幅でインデントしながら導出を文字列で表現する
+ *)
 let rec to_string_aux indent depth = function
   | EInt (desc) ->
       String.make depth ' ' ^ string_of_eval_desc desc ^ "E-Int {}"
@@ -108,17 +115,21 @@ let rec to_string_aux indent depth = function
       to_string_aux indent (depth + indent) d1 ^ ";\n" ^
       to_string_aux indent (depth + indent) d2 ^ "\n" ^
       String.make depth ' ' ^ "}"
-  | BPlus (desc) ->
-      String.make depth ' ' ^ Value.to_string desc.lsrc ^ " plus " ^ Value.to_string desc.rsrc ^ " is " ^ Value.to_string desc.dst ^ " by B-Plus {}"
-  | BMinus (desc) ->
-      String.make depth ' ' ^ Value.to_string desc.lsrc ^ " minus " ^ Value.to_string desc.rsrc ^ " is " ^ Value.to_string desc.dst ^ " by B-Minus {}"
-  | BTimes (desc) ->
-      String.make depth ' ' ^ Value.to_string desc.lsrc ^ " times " ^ Value.to_string desc.rsrc ^ " is " ^ Value.to_string desc.dst ^ " by B-Times {}"
-  | BLt (desc) ->
-      String.make depth ' ' ^ Value.to_string desc.lsrc ^ " less than " ^ Value.to_string desc.rsrc ^ " is " ^ Value.to_string desc.dst ^ " by B-Lt {}"
+  | BPlus { lsrc = lsrc; rsrc = rsrc; dst = dst } ->
+      String.make depth ' ' ^ Value.to_string lsrc ^ " plus " ^ Value.to_string rsrc ^ " is " ^ Value.to_string dst ^ " by B-Plus {}"
+  | BMinus { lsrc = lsrc; rsrc = rsrc; dst = dst } ->
+      String.make depth ' ' ^ Value.to_string lsrc ^ " minus " ^ Value.to_string rsrc ^ " is " ^ Value.to_string dst ^ " by B-Minus {}"
+  | BTimes { lsrc = lsrc; rsrc = rsrc; dst = dst } ->
+      String.make depth ' ' ^ Value.to_string lsrc ^ " times " ^ Value.to_string rsrc ^ " is " ^ Value.to_string dst ^ " by B-Times {}"
+  | BLt { lsrc = lsrc; rsrc = rsrc; dst = dst } ->
+      String.make depth ' ' ^ Value.to_string lsrc ^ " less than " ^ Value.to_string rsrc ^ " is " ^ Value.to_string dst ^ " by B-Lt {}"
 
 let to_string = to_string_aux 2 0
 
+(*
+ * val eval_and_deriv : Value.env -> Exp.t -> t * Value.t
+ * 与えられた式を評価しつつ導出を残す
+ *)
 let rec eval_and_deriv env = function
   | Exp.Int (i) -> 
       let v = Value.Int (i) in
@@ -210,5 +221,6 @@ let rec eval_and_deriv env = function
           (EMatchCons ({ env = env; exp = Exp.Match (e1, e2, x, y, e3); value = v}, d1, d3), v)
       end
 
+(* F#とかでも見る関数合成的なやつ *)
 let ( >> ) f g x = g (f x)
 let of_Exp = eval_and_deriv [] >> fst

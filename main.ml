@@ -1,10 +1,17 @@
+external ( |> ) : 'a -> ('a -> 'b) -> 'b = "%revapply"
+
+(* 
+ * val read_eval_print_loop : unit -> unit
+ * ただのREPL
+ * ここも適当
+ *)
 let rec read_eval_print_loop () =
   print_string "# ";
   flush stdout;
-  let exp = Parser.toplevel Lexer.token (Lexing.from_channel stdin) in
-  let d = Deriv.of_Exp exp in
-  print_string (Deriv.to_string d);
-  print_newline ();
+  Parser.toplevel Lexer.token (Lexing.from_channel stdin)
+    |> Deriv.of_Exp
+    |> Deriv.to_string
+    |> print_endline;
   read_eval_print_loop ()
 
 let _ = read_eval_print_loop ()
