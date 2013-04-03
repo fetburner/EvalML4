@@ -19,8 +19,10 @@ let rec to_string = function
       "(" ^ env_to_string env ^ ")[rec " ^ x ^ " = fun " ^ y ^ " -> " ^ Exp.to_string e0 ^ "]"
   | Nil ->
       "[]"
+  | Cons (Cons _ as e1, e2) ->
+      "(" ^ to_string e1 ^ ") :: " ^ to_string e2
   | Cons (e1, e2) ->
-      "(" ^ to_string e1 ^ ") :: (" ^ to_string e2 ^ ")"
+      to_string e1 ^ " :: " ^ to_string e2
 (*
  * val bind_to_string : bind -> string
  * 束縛を文字列で表現する

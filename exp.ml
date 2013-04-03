@@ -3,10 +3,7 @@ type t =
   | Int of int
   | Bool of bool
   | Var of string
-  | Plus of t * t
-  | Minus of t * t
-  | Times of t * t
-  | Lt of t * t
+  | BinOp of t * Prim.t * t
   | If of t * t * t
   | Let of string * t * t
   | Fun of string * t
@@ -28,14 +25,8 @@ let rec to_string = function
       string_of_bool b
   | Var (x) ->
       x
-  | Plus (e1, e2) ->
-      "(" ^ to_string e1 ^ ") + (" ^ to_string e2 ^ ")"
-  | Minus (e1, e2) ->
-      "(" ^ to_string e1 ^ ") - (" ^ to_string e2 ^ ")"
-  | Times (e1, e2) ->
-      "(" ^ to_string e1 ^ ") * (" ^ to_string e2 ^ ")"
-  | Lt (e1, e2) ->
-      "(" ^ to_string e1 ^ ") < (" ^ to_string e2 ^ ")"
+  | BinOp (e1, op, e2) ->
+      "(" ^ to_string e1 ^ ") " ^ Prim.to_string op ^ " (" ^ to_string e2 ^ ")"
   | If (e1, e2, e3) ->
       "if " ^ to_string e1 ^ " then " ^ to_string e2 ^ " else " ^ to_string e3
   | Let (x, e1, e2) ->

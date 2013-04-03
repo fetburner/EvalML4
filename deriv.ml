@@ -140,38 +140,27 @@ let rec eval_and_deriv env = function
   | Exp.Var (x) ->
       let v = List.assoc x env in
       (EVar { env = env; exp = Exp.Var (x); value = v }, v)
-  | Exp.Plus (e1, e2) ->
+  | Exp.BinOp (e1, op, e2) ->
       let (d1, v1) = eval_and_deriv env e1 in
       let (d2, v2) = eval_and_deriv env e2 in
-      let v =
-        match v1, v2 with
-        | Value.Int (i1), Value.Int (i2) -> Value.Int (i1 + i2) in
-      let d3 = BPlus { lsrc = v1; rsrc = v2; dst = v} in
-      (EPlus ({ env = env; exp = Exp.Plus (e1, e2); value = v}, d1, d2, d3), v)
-  | Exp.Minus (e1, e2) ->
-      let (d1, v1) = eval_and_deriv env e1 in
-      let (d2, v2) = eval_and_deriv env e2 in
-      let v =
-        match v1, v2 with
-        | Value.Int (i1), Value.Int (i2) -> Value.Int (i1 - i2) in
-      let d3 = BMinus { lsrc = v1; rsrc = v2; dst = v} in
-      (EMinus({ env = env; exp = Exp.Minus (e1, e2); value = v}, d1, d2, d3), v)
-  | Exp.Times (e1, e2) ->
-      let (d1, v1) = eval_and_deriv env e1 in
-      let (d2, v2) = eval_and_deriv env e2 in
-      let v =
-        match v1, v2 with
-        | Value.Int (i1), Value.Int (i2) -> Value.Int (i1 * i2) in
-      let d3 = BTimes { lsrc = v1; rsrc = v2; dst = v} in
-      (ETimes ({ env = env; exp = Exp.Times (e1, e2); value = v}, d1, d2, d3), v)
-  | Exp.Lt (e1, e2) ->
-      let (d1, v1) = eval_and_deriv env e1 in
-      let (d2, v2) = eval_and_deriv env e2 in
-      let v =
-        match v1, v2 with
-        | Value.Int (i1), Value.Int (i2) -> Value.Bool (i1 < i2) in
-      let d3 = BLt { lsrc = v1; rsrc = v2; dst = v} in
-      (ELt ({ env = env; exp = Exp.Lt (e1, e2); value = v}, d1, d2, d3), v)
+      begin match v1, op, v2 with
+      | Value.Int (i1), Prim.Plus, Value.Int (i2) ->
+          let v = Value.Int (i1 + i2) in
+          let d3 = BPlus { lsrc = v1; rsrc = v2; dst = v} in
+          (EPlus ({ env = env; exp = Exp.BinOp (e1, op, e2); value = v}, d1, d2, d3), v)
+      | Value.Int (i1), Prim.Minus, Value.Int (i2) ->
+          let v = Value.Int (i1 - i2) in
+          let d3 = BMinus { lsrc = v1; rsrc = v2; dst = v} in
+          (EMinus({ env = env; exp = Exp.BinOp (e1, op, e2); value = v}, d1, d2, d3), v)
+      | Value.Int (i1), Prim.Times, Value.Int (i2) ->
+          let v = Value.Int (i1 * i2) in
+          let d3 = BTimes { lsrc = v1; rsrc = v2; dst = v} in
+          (ETimes ({ env = env; exp = Exp.BinOp (e1, op, e2); value = v}, d1, d2, d3), v)
+      | Value.Int (i1), Prim.Lt, Value.Int (i2) ->
+          let v = Value.Bool (i1 < i2) in
+          let d3 = BLt { lsrc = v1; rsrc = v2; dst = v} in
+          (ELt ({ env = env; exp = Exp.BinOp (e1, op, e2); value = v}, d1, d2, d3), v)
+      end
   | Exp.If (e1, e2, e3) ->
       let (d1, v1) = eval_and_deriv env e1 in
       begin match v1 with
