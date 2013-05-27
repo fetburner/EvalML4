@@ -164,6 +164,8 @@ let rec eval_and_deriv env exp =
           let v = Value.Bool (i1 < i2) in
           let d3 = BLt { lsrc = v1; rsrc = v2; dst = v} in
           (ELt (make_eval_desc v, d1, d2, d3), v)
+      | _ ->
+          raise (Failure "四則演算に失敗しました")
       end
   | Exp.If (e1, e2, e3) ->
       let (d1, v1) = eval_and_deriv env e1 in
@@ -174,6 +176,8 @@ let rec eval_and_deriv env exp =
       | Value.Bool (false) ->
           let (d3, v) = eval_and_deriv env e3 in
           (EIfF (make_eval_desc v, d1, d3), v)
+      | _ ->
+          raise (Failure "Ifの条件判断には真偽値のみ使用出来ます")
       end
   | Exp.Let (x, e1, e2) ->
       let (d1, v1) = eval_and_deriv env e1 in
@@ -192,6 +196,8 @@ let rec eval_and_deriv env exp =
       | Value.Rec (env2, x, y, e0) as v1 ->
           let (d3, v) = eval_and_deriv ((y, v2) :: (x, v1) :: env2) e0 in
           (EAppRec (make_eval_desc v, d1, d2, d3), v)
+      | _ ->
+          raise (Failure "関数以外に値が適用されました")
       end
   | Exp.LetRec (x, y, e1, e2) ->
       let (d1, v) = eval_and_deriv ((x, Value.Rec (env, x, y, e1)) :: env) e2 in
@@ -212,6 +218,8 @@ let rec eval_and_deriv env exp =
       | Value.Cons (v1, v2) ->
           let (d3, v) = eval_and_deriv ((y, v2) :: (x, v1) :: env) e3 in
           (EMatchCons (make_eval_desc v, d1, d3), v)
+      | _ ->    
+          raise (Failure "パターンマッチングが使用できるのはリストだけです")
       end
 
 (* F#とかでも見る関数合成的なやつ *)
