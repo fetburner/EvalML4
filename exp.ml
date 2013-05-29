@@ -1,4 +1,3 @@
-(* ML4の式を表す型 *)
 type t =
   | Int of int
   | Bool of bool
@@ -13,18 +12,10 @@ type t =
   | Cons of t * t
   | Match of t * t * string * string * t
 
-(*
- * val to_string : t -> string
- * 式を文字列で表現する
- * 括弧の辺りは適当
- *)
 let rec to_string = function
-  | Int (i) ->
-      string_of_int i
-  | Bool (b) ->
-      string_of_bool b
-  | Var (x) ->
-      x
+  | Int (i) -> string_of_int i
+  | Bool (b) -> string_of_bool b
+  | Var (x) -> x
   | BinOp (e1, op, e2) ->
       "(" ^ to_string e1 ^ ") " ^ Prim.to_string op ^ " (" ^ to_string e2 ^ ")"
   | If (e1, e2, e3) ->

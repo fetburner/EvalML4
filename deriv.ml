@@ -1,227 +1,200 @@
-type t =
-  | EInt of eval_desc
-  | EBool of eval_desc
-  | EVar of eval_desc
-  | EPlus of eval_desc * t * t * t
-  | EMinus of eval_desc * t * t * t
-  | ETimes of eval_desc * t * t * t
-  | ELt of eval_desc * t * t * t
-  | EIfT of eval_desc * t * t
-  | EIfF of eval_desc * t * t
-  | ELet of eval_desc * t * t
-  | EFun of eval_desc
-  | EApp of eval_desc * t * t * t
-  | ELetRec of eval_desc * t
-  | EAppRec of eval_desc * t * t * t
-  | ENil of eval_desc
-  | ECons of eval_desc * t * t
-  | EMatchNil of eval_desc * t * t
-  | EMatchCons of eval_desc * t * t
-  | BPlus of binop_desc
-  | BMinus of binop_desc
-  | BTimes of binop_desc
-  | BLt of binop_desc
-(* 判断のうちenv |- exp evalto valueまでの記述を表す *)
-and eval_desc = { env : Value.env; exp : Exp.t; value : Value.t }
-(* 整数演算に関する判断のうち頻出する記述を表す *)
-and binop_desc = { lsrc : Value.t; rsrc : Value.t; dst : Value.t }
-
-(* val string_of_eval_desc : eval_desc -> string *)
-let string_of_eval_desc { env = env; exp = e; value = v} =
-  Value.env_to_string env ^ " |- " ^ Exp.to_string e ^ " evalto " ^ Value.to_string v ^ " by "
+type t = {
+  env : Value.env;
+  exp : Exp.t;
+  value : Value.t;
+  rule : rule }
+(* 導出規則 *)
+and rule = 
+  | EInt
+  | EBool
+  | EVar
+  | EPlus of t * t
+  | EMinus of t * t
+  | ETimes of t * t
+  | ELt of t * t
+  | EIfT of t * t
+  | EIfF of t * t
+  | ELet of t * t
+  | EFun
+  | EApp of t * t * t
+  | ELetRec of t
+  | EAppRec of t * t * t
+  | ENil
+  | ECons of t * t
+  | EMatchNil of t * t
+  | EMatchCons of t * t
 
 (*
- * val to_string_aux : int -> int -> t -> string
- * 指定された幅でインデントしながら導出を文字列で表現する
+ * val to_string_aux : string -> ?tab:string -> t -> string
+ * 指定された文字列でインデントしながら導出を文字列で表現する
  *)
-let rec to_string_aux indent depth =
-  let to_string_aux_with_indent d = to_string_aux indent (depth + indent) d in
-  let make_indent depth = String.make depth ' ' in function
-  | EInt (desc) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-Int {}"
-  | EBool (desc) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-Bool {}"
-  | EVar (desc) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-Var {}"
-  | EPlus (desc, d1, d2, d3) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-Plus {\n" ^
-      to_string_aux_with_indent d1 ^ ";\n" ^
-      to_string_aux_with_indent d2 ^ ";\n" ^
-      to_string_aux_with_indent d3 ^ "\n" ^
-      make_indent depth ^ "}"
-  | EMinus (desc, d1, d2, d3) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-Minus {\n" ^
-      to_string_aux_with_indent d1 ^ ";\n" ^
-      to_string_aux_with_indent d2 ^ ";\n" ^
-      to_string_aux_with_indent d3 ^ "\n" ^
-      make_indent depth ^ "}"
-  | ETimes (desc, d1, d2, d3) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-Times {\n" ^
-      to_string_aux_with_indent d1 ^ ";\n" ^
-      to_string_aux_with_indent d2 ^ ";\n" ^
-      to_string_aux_with_indent d3 ^ "\n" ^
-      make_indent depth ^ "}"
-  | ELt (desc, d1, d2, d3) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-Lt {\n" ^
-      to_string_aux_with_indent d1 ^ ";\n" ^
-      to_string_aux_with_indent d2 ^ ";\n" ^
-      to_string_aux_with_indent d3 ^ "\n" ^
-      make_indent depth ^ "}"
-  | EIfT (desc, d1, d2) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-IfT {\n" ^
-      to_string_aux_with_indent d1 ^ ";\n" ^
-      to_string_aux_with_indent d2 ^ "\n" ^
-      make_indent depth ^ "}"
-  | EIfF (desc, d1, d2) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-IfF {\n" ^
-      to_string_aux_with_indent d1 ^ ";\n" ^
-      to_string_aux_with_indent d2 ^ "\n" ^
-      make_indent depth ^ "}"
-  | ELet (desc, d1, d2) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-Let {\n" ^
-      to_string_aux_with_indent d1 ^ ";\n" ^
-      to_string_aux_with_indent d2 ^ "\n" ^
-      make_indent depth ^ "}"
-  | EFun (desc) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-Fun {}"
-  | EApp (desc, d1, d2, d3) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-App {\n" ^
-      to_string_aux_with_indent d1 ^ ";\n" ^
-      to_string_aux_with_indent d2 ^ ";\n" ^
-      to_string_aux_with_indent d3 ^ "\n" ^
-      make_indent depth ^ "}"
-  | ELetRec (desc, d) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-LetRec {\n" ^
-      to_string_aux_with_indent d ^ "\n" ^
-      make_indent depth ^ "}"
-  | EAppRec (desc, d1, d2, d3) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-AppRec {\n" ^
-      to_string_aux_with_indent d1 ^ ";\n" ^
-      to_string_aux_with_indent d2 ^ ";\n" ^
-      to_string_aux_with_indent d3 ^ "\n" ^
-      make_indent depth ^ "}"
-  | ENil (desc) -> 
-      make_indent depth ^ string_of_eval_desc desc ^ "E-Nil {}"
-  | ECons (desc, d1, d2) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-Cons {\n" ^
-      to_string_aux_with_indent d1 ^ ";\n" ^
-      to_string_aux_with_indent d2 ^ "\n" ^
-      make_indent depth ^ "}"
-  | EMatchNil (desc, d1, d2) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-MatchNil {\n" ^
-      to_string_aux_with_indent d1 ^ ";\n" ^
-      to_string_aux_with_indent d2 ^ "\n" ^
-      make_indent depth ^ "}"
-  | EMatchCons (desc, d1, d2) ->
-      make_indent depth ^ string_of_eval_desc desc ^ "E-MatchCons {\n" ^
-      to_string_aux_with_indent d1 ^ ";\n" ^
-      to_string_aux_with_indent d2 ^ "\n" ^
-      make_indent depth ^ "}"
-  | BPlus { lsrc = lsrc; rsrc = rsrc; dst = dst } ->
-      make_indent depth ^ Value.to_string lsrc ^ " plus " ^ Value.to_string rsrc ^ " is " ^ Value.to_string dst ^ " by B-Plus {}"
-  | BMinus { lsrc = lsrc; rsrc = rsrc; dst = dst } ->
-      make_indent depth ^ Value.to_string lsrc ^ " minus " ^ Value.to_string rsrc ^ " is " ^ Value.to_string dst ^ " by B-Minus {}"
-  | BTimes { lsrc = lsrc; rsrc = rsrc; dst = dst } ->
-      make_indent depth ^ Value.to_string lsrc ^ " times " ^ Value.to_string rsrc ^ " is " ^ Value.to_string dst ^ " by B-Times {}"
-  | BLt { lsrc = lsrc; rsrc = rsrc; dst = dst } ->
-      make_indent depth ^ Value.to_string lsrc ^ " less than " ^ Value.to_string rsrc ^ " is " ^ Value.to_string dst ^ " by B-Lt {}"
+let rec to_string_aux indent ?(tab = "  ") deriv = 
+  let to_string_aux = to_string_aux (indent ^ tab) in
+  indent ^ Value.env_to_string deriv.env ^ " |- " ^
+    Exp.to_string deriv.exp ^ " evalto " ^
+    Value.to_string deriv.value ^ " by " ^
+    match deriv.rule with
+    | EInt -> "E-Int {}"
+    | EBool -> "E-Bool {}"
+    | EVar -> "E-Var {}"
+    | EPlus (d1, d2) ->
+        "E-Plus {\n" ^
+        to_string_aux d1 ^ ";\n" ^
+        to_string_aux d2 ^ ";\n" ^
+        indent ^ tab ^ Value.to_string d1.value ^
+          " plus " ^ Value.to_string d2.value ^ " is " ^
+          Value.to_string deriv.value ^ " by B-Plus {}\n" ^
+        indent ^ "}"  
+    | EMinus (d1, d2) ->
+        "E-Minus {\n" ^
+        to_string_aux d1 ^ ";\n" ^
+        to_string_aux d2 ^ ";\n" ^
+        indent ^ tab ^ Value.to_string d1.value ^
+          " minus " ^ Value.to_string d2.value ^ " is " ^
+          Value.to_string deriv.value ^ " by B-Minus {}\n" ^
+        indent ^ "}"
+    | ETimes (d1, d2) ->
+        "E-Times {\n" ^
+        to_string_aux d1 ^ ";\n" ^
+        to_string_aux d2 ^ ";\n" ^
+        indent ^ tab ^ Value.to_string d1.value ^
+          " times " ^ Value.to_string d2.value ^ " is " ^
+          Value.to_string deriv.value ^ " by B-Times {}\n" ^
+        indent ^ "}"
+    | ELt (d1, d2) ->
+        "E-Lt {\n" ^
+        to_string_aux d1 ^ ";\n" ^
+        to_string_aux d2 ^ ";\n" ^
+        indent ^ tab ^ Value.to_string d1.value ^
+          " less than " ^ Value.to_string d2.value ^ " is " ^
+          Value.to_string deriv.value ^ " by B-Lt {}\n" ^
+        indent ^ "}"
+    | EIfT (d1, d2) ->
+        "E-IfT {\n" ^
+        to_string_aux d1 ^ ";\n" ^
+        to_string_aux d2 ^ "\n" ^
+        indent ^ "}"
+    | EIfF (d1, d2) ->
+        "E-IfF {\n" ^
+        to_string_aux d1 ^ ";\n" ^
+        to_string_aux d2 ^ "\n" ^
+        indent ^ "}"
+    | ELet (d1, d2) ->
+        "E-Let {\n" ^
+        to_string_aux d1 ^ ";\n" ^
+        to_string_aux d2 ^ "\n" ^
+        indent ^ "}"
+    | EFun -> "E-Fun {}"
+    | EApp (d1, d2, d3) ->
+        "E-App {\n" ^
+        to_string_aux d1 ^ ";\n" ^
+        to_string_aux d2 ^ ";\n" ^
+        to_string_aux d3 ^ "\n" ^
+        indent ^ "}"
+    | ELetRec (d1) ->
+        "E-LetRec {\n" ^
+        to_string_aux d1 ^ "\n" ^
+        indent ^ "}"
+    | EAppRec (d1, d2, d3) ->
+        "E-AppRec {\n" ^
+        to_string_aux d1 ^ ";\n" ^
+        to_string_aux d2 ^ ";\n" ^
+        to_string_aux d3 ^ "\n" ^
+        indent ^ "}"
+    | ENil -> "E-Nil {}"
+    | ECons (d1, d2) ->
+        "E-Cons {\n" ^
+        to_string_aux d1 ^ ";\n" ^
+        to_string_aux d2 ^ "\n" ^
+        indent ^ "}"
+    | EMatchNil (d1, d2) ->
+        "E-MatchNil {\n" ^
+        to_string_aux d1 ^ ";\n" ^
+        to_string_aux d2 ^ "\n" ^
+        indent ^ "}"
+    | EMatchCons (d1, d2) ->
+        "E-MatchCons {\n" ^
+        to_string_aux d1 ^ ";\n" ^
+        to_string_aux d2 ^ "\n" ^
+        indent ^ "}"
 
-let to_string = to_string_aux 2 0
+let to_string = to_string_aux ""
 
 (*
- * val eval_and_deriv : Value.env -> Exp.t -> t * Value.t
- * 与えられた式を評価しつつ導出を残す
+ * 与えられた式を評価しながら導出を残す
  *)
-let rec eval_and_deriv env exp =
-  let make_eval_desc v = { env = env; exp = exp; value = v } in
+let rec deriv ?(env = []) exp =
   match exp with
-  | Exp.Int (i) -> 
-      let v = Value.Int (i) in
-      (EInt (make_eval_desc v), v)
-  | Exp.Bool (b) ->
-      let v = Value.Bool (b) in
-      (EBool (make_eval_desc v), v)
-  | Exp.Var (x) ->
-      let v = List.assoc x env in
-      (EVar (make_eval_desc v), v)
+  | Exp.Int (i) -> { env; exp; value = Value.Int (i); rule = EInt }
+  | Exp.Bool (b) -> { env; exp; value = Value.Bool (b); rule = EBool }
+  | Exp.Var (x) -> { env; exp; value = List.assoc x env; rule = EVar }
   | Exp.BinOp (e1, op, e2) ->
-      let (d1, v1) = eval_and_deriv env e1 in
-      let (d2, v2) = eval_and_deriv env e2 in
-      begin match v1, op, v2 with
+      let d1 = deriv ~env e1 in
+      let d2 = deriv ~env e2 in
+      begin match d1.value, op, d2.value with
       | Value.Int (i1), Prim.Plus, Value.Int (i2) ->
-          let v = Value.Int (i1 + i2) in
-          let d3 = BPlus { lsrc = v1; rsrc = v2; dst = v} in
-          (EPlus (make_eval_desc v, d1, d2, d3), v)
+          { env; exp; value = Value.Int (i1 + i2); rule = EPlus (d1, d2) }
       | Value.Int (i1), Prim.Minus, Value.Int (i2) ->
-          let v = Value.Int (i1 - i2) in
-          let d3 = BMinus { lsrc = v1; rsrc = v2; dst = v} in
-          (EMinus (make_eval_desc v, d1, d2, d3), v)
+          { env; exp; value = Value.Int (i1 - i2); rule = EMinus (d1, d2) }
       | Value.Int (i1), Prim.Times, Value.Int (i2) ->
-          let v = Value.Int (i1 * i2) in
-          let d3 = BTimes { lsrc = v1; rsrc = v2; dst = v} in
-          (ETimes (make_eval_desc v, d1, d2, d3), v)
+          { env; exp; value = Value.Int (i1 * i2); rule = ETimes (d1, d2) }
       | Value.Int (i1), Prim.Lt, Value.Int (i2) ->
-          let v = Value.Bool (i1 < i2) in
-          let d3 = BLt { lsrc = v1; rsrc = v2; dst = v} in
-          (ELt (make_eval_desc v, d1, d2, d3), v)
+          { env; exp; value = Value.Bool (i1 < i2); rule = ELt (d1, d2) }
       | _ ->
           raise (Failure "四則演算に失敗しました")
       end
   | Exp.If (e1, e2, e3) ->
-      let (d1, v1) = eval_and_deriv env e1 in
-      begin match v1 with
+      let d1 = deriv ~env e1 in
+      begin match d1.value with
       | Value.Bool (true) ->
-          let (d2, v) = eval_and_deriv env e2 in
-          (EIfT (make_eval_desc v, d1, d2), v)
+          let d2 = deriv ~env e2 in
+          { env; exp; value = d2.value; rule = EIfT (d1, d2) }
       | Value.Bool (false) ->
-          let (d3, v) = eval_and_deriv env e3 in
-          (EIfF (make_eval_desc v, d1, d3), v)
+          let d3 = deriv ~env e3 in
+          { env; exp; value = d3.value; rule = EIfF (d1, d3) }
       | _ ->
           raise (Failure "Ifの条件判断には真偽値のみ使用出来ます")
       end
   | Exp.Let (x, e1, e2) ->
-      let (d1, v1) = eval_and_deriv env e1 in
-      let (d2, v) = eval_and_deriv ((x, v1) :: env) e2 in
-      (ELet (make_eval_desc v, d1, d2), v)
+      let d1 = deriv ~env e1 in
+      let d2 = deriv ~env:((x, d1.value) :: env) e2 in
+      { env; exp; value = d2.value; rule = ELet (d1, d2) }
   | Exp.Fun (x, e) ->
-      let v = Value.Fun (env, x, e) in
-      (EFun (make_eval_desc v), v)
+      { env; exp; value = Value.Fun (env, x, e); rule = EFun }
   | Exp.App (e1, e2) ->
-      let (d1, v1) = eval_and_deriv env e1 in
-      let (d2, v2) = eval_and_deriv env e2 in
-      begin match v1 with
+      let d1 = deriv ~env e1 in
+      let d2 = deriv ~env e2 in
+      begin match d1.value with
       | Value.Fun (env2, x, e0) ->
-          let (d3, v) = eval_and_deriv ((x, v2) :: env2) e0 in
-          (EApp (make_eval_desc v, d1, d2, d3), v)
-      | Value.Rec (env2, x, y, e0) as v1 ->
-          let (d3, v) = eval_and_deriv ((y, v2) :: (x, v1) :: env2) e0 in
-          (EAppRec (make_eval_desc v, d1, d2, d3), v)
+          let d3 = deriv ~env:((x, d2.value) :: env2) e0 in
+          { env; exp; value = d3.value; rule = EApp (d1, d2, d3) }
+      | Value.Rec (env2, x, y, e0) ->
+          let d3 = deriv ~env:((y, d2.value) :: (x, d1.value) :: env2) e0 in
+          { env; exp; value = d3.value; rule = EAppRec (d1, d2, d3) }
       | _ ->
           raise (Failure "関数以外に値が適用されました")
       end
   | Exp.LetRec (x, y, e1, e2) ->
-      let (d1, v) = eval_and_deriv ((x, Value.Rec (env, x, y, e1)) :: env) e2 in
-      (ELetRec (make_eval_desc v, d1), v)
+      let d1 = deriv ~env:((x, Value.Rec (env, x, y, e1)) :: env) e2 in
+      { env; exp; value = d1.value; rule = ELetRec (d1) }
   | Exp.Nil ->
-      (ENil (make_eval_desc Value.Nil ), Value.Nil)
+      { env; exp; value = Value.Nil; rule = ENil }
   | Exp.Cons (e1, e2) ->
-      let (d1, v1) = eval_and_deriv env e1 in
-      let (d2, v2) = eval_and_deriv env e2 in
-      let v = Value.Cons (v1, v2) in
-      (ECons (make_eval_desc v, d1, d2), v)
+      let d1 = deriv ~env e1 in
+      let d2 = deriv ~env e2 in
+      let value = Value.Cons (d1.value, d2.value) in
+      { env; exp; value; rule = ECons (d1, d2) }
   | Exp.Match (e1, e2, x, y, e3) ->
-      let (d1, v1) = eval_and_deriv env e1 in
-      begin match v1 with
+      let d1 = deriv ~env e1 in
+      begin match d1.value with
       | Value.Nil ->
-          let (d2, v) = eval_and_deriv env e2 in
-          (EMatchNil (make_eval_desc v, d1, d2), v)
+          let d2 = deriv ~env e2 in
+          { env; exp; value = d2.value; rule = EMatchNil (d1, d2) }
       | Value.Cons (v1, v2) ->
-          let (d3, v) = eval_and_deriv ((y, v2) :: (x, v1) :: env) e3 in
-          (EMatchCons (make_eval_desc v, d1, d3), v)
+          let d3 = deriv ~env:((y, v2) :: (x, v1) :: env) e3 in
+          { env; exp; value = d3.value; rule = EMatchCons (d1, d3) }
       | _ ->    
           raise (Failure "パターンマッチングが使用できるのはリストだけです")
       end
 
-(* F#とかでも見る関数合成的なやつ *)
-let ( >> ) f g x = g (f x)
-let of_Exp = eval_and_deriv [] >> fst
+let of_Exp = deriv
