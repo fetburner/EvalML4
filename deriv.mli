@@ -1,3 +1,6 @@
+(* 式の評価に失敗し場合に投げる例外 *)
+exception Eval of Value.env * Exp.t
+
 (* 導出を表す型 *)
 type t
 (* 導出を文字列で表現する *)

@@ -26,6 +26,7 @@ open Exp
 %token MATCH
 %token WITH
 %token BAR
+%token QUIT
 
 %nonassoc IN
 %nonassoc LET
@@ -37,14 +38,16 @@ open Exp
 %left AST
 %left prec_app
 
-%type <Exp.t> toplevel
+%type <Toplevel.t> toplevel
 %start toplevel
 
 %%
 
 toplevel:
   | exp EOI
-      { $1 }
+      { Toplevel.Exp ($1) }
+  | QUIT EOI
+      { Toplevel.Quit }
 
 exp:
   | simple_exp

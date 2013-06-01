@@ -1,3 +1,5 @@
+exception Eval of Value.env * Exp.t
+
 type t = {
   env : Value.env;
   exp : Exp.t;
@@ -141,7 +143,7 @@ let rec deriv ?(env = []) exp =
       | Value.Int (i1), Prim.Lt, Value.Int (i2) ->
           { env; exp; value = Value.Bool (i1 < i2); rule = ELt (d1, d2) }
       | _ ->
-          raise (Failure "四則演算に失敗しました")
+          raise (Eval (env, exp))
       end
   | Exp.If (e1, e2, e3) ->
       let d1 = deriv ~env e1 in
@@ -153,7 +155,7 @@ let rec deriv ?(env = []) exp =
           let d3 = deriv ~env e3 in
           { env; exp; value = d3.value; rule = EIfF (d1, d3) }
       | _ ->
-          raise (Failure "Ifの条件判断には真偽値のみ使用出来ます")
+          raise (Eval (env, exp))
       end
   | Exp.Let (x, e1, e2) ->
       let d1 = deriv ~env e1 in
@@ -172,7 +174,7 @@ let rec deriv ?(env = []) exp =
           let d3 = deriv ~env:((y, d2.value) :: (x, d1.value) :: env2) e0 in
           { env; exp; value = d3.value; rule = EAppRec (d1, d2, d3) }
       | _ ->
-          raise (Failure "関数以外に値が適用されました")
+          raise (Eval (env, exp))
       end
   | Exp.LetRec (x, y, e1, e2) ->
       let d1 = deriv ~env:((x, Value.Rec (env, x, y, e1)) :: env) e2 in
@@ -194,7 +196,7 @@ let rec deriv ?(env = []) exp =
           let d3 = deriv ~env:((y, v2) :: (x, v1) :: env) e3 in
           { env; exp; value = d3.value; rule = EMatchCons (d1, d3) }
       | _ ->    
-          raise (Failure "パターンマッチングが使用できるのはリストだけです")
+          raise (Eval (env, exp))
       end
 
 let of_Exp = deriv

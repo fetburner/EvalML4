@@ -153,6 +153,7 @@ FILES[] =
     prim
     lexer
     parser
+    toplevel
 #
 PROGRAM = EvalML4
 # OCAML_LIBS +=

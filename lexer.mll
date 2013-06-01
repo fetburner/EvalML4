@@ -1,5 +1,6 @@
 { 
 open Parser
+exception Lexing of string
 }
 
 let space = [' ' '\t' '\n' '\r']
@@ -58,7 +59,9 @@ rule token = parse
       { MATCH }
   | "with"
       { WITH }
+  | "#quit"
+      { QUIT }
   | lower (lower|upper|digit|'_')*
       { VARIABLE(Lexing.lexeme lexbuf) }
   | _
-      { failwith ("unknown token: " ^ Lexing.lexeme lexbuf) }
+      { raise (Lexing (Lexing.lexeme lexbuf)) }
